@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,148 +10,122 @@ MathJax = { tex:{ inlineMath:[['\\(','\\)']], displayMath:[['\\[','\\]']] }, svg
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 <style>
-:root{ --bg:#0f1117; --panel:#181c26; --ink:#e8e6df; --muted:#a9a496; --accent:#c9a45c; --accent2:#7fb2c9; --line:#2a2f3d; --green:#57d38c; --mag:#d67ad6;}
+:root, [data-theme="dark"]{ --bg:#0f1117; --panel:#181c26; --sub:#12151d; --ink:#e8e6df; --muted:#a9a496; --accent:#c9a45c; --accent2:#7fb2c9; --line:#2a2f3d; --green:#57d38c; --mag:#d67ad6;}
+[data-theme="light"]{ --bg:#f5f3ec; --panel:#ffffff; --sub:#f0eee6; --ink:#1e2230; --muted:#5c6270; --accent:#9a6b1f; --accent2:#2b6f8c; --line:#d8d4c8; --green:#1f9d57; --mag:#a534a5;}
 *{box-sizing:border-box;}
 body{ margin:0; background:var(--bg); color:var(--ink);
-  font-family: Cambria, 'Cambria Math', 'Gentium Book Plus', 'Charter', 'Palatino Linotype', 'Book Antiqua', serif; line-height:1.55; }
-header{ padding:34px 24px 20px; text-align:center; border-bottom:1px solid var(--line); }
+  font-family: Cambria, 'Cambria Math', 'Gentium Book Plus', 'Charter', 'Palatino Linotype', 'Book Antiqua', serif; line-height:1.55; transition:background .2s,color .2s; }
+header{ padding:34px 24px 20px; text-align:center; border-bottom:1px solid var(--line); position:relative; }
 header h1{ font-size:2rem; margin:0 0 6px; color:var(--accent); }
 header p{ color:var(--muted); margin:0; font-size:.98rem; }
+#themeBtn{ position:absolute; top:20px; right:24px; background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:8px 14px; cursor:pointer; font-family:inherit; font-size:.85rem; }
 .wrap{ max-width:1500px; margin:0 auto; padding:22px; }
 .panel{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px 22px; margin-bottom:20px; }
-.formula{ background:#12151d; border:1px solid var(--line); border-radius:8px; padding:10px 16px; margin-bottom:18px; color:var(--muted); font-size:.95rem; overflow-x:auto; }
+.formula{ background:var(--sub); border:1px solid var(--line); border-radius:8px; padding:12px 18px; margin-bottom:18px; color:var(--muted); font-size:.95rem; overflow-x:auto; }
+.formula b{ color:var(--accent2); }
 .row{ display:grid; gap:16px 26px; margin-bottom:16px; }
 .row.r3{ grid-template-columns:repeat(3,1fr); }
 .row.r2{ grid-template-columns:repeat(2,1fr); }
 .ctl{ display:flex; flex-direction:column; gap:5px; }
 .ctl label{ font-size:.85rem; color:var(--accent2); font-weight:600; }
-.ctl input{ background:#0f1117; border:1px solid var(--line); color:var(--ink); border-radius:6px; padding:7px 9px; font-size:.92rem; font-family:'Cambria Math', Cambria, serif; }
+.ctl input{ background:var(--sub); border:1px solid var(--line); color:var(--ink); border-radius:6px; padding:7px 9px; font-size:.92rem; font-family:'Cambria Math', Cambria, serif; }
 .ctl input[type=range]{ padding:0; accent-color:var(--accent); }
 .sliderline{ display:flex; align-items:center; gap:10px; }
 .sliderline input[type=range]{ flex:1; }
-.sval{ color:var(--accent); min-width:66px; text-align:right; font-family:'Cambria Math', Cambria, serif; }
+.sliderline input[type=text]{ width:78px; text-align:right; }
 .icgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 .btnrow{ display:flex; gap:14px; align-items:center; margin-top:6px; flex-wrap:wrap;}
-button{ background:var(--accent); color:#1a1400; border:none; border-radius:8px; padding:10px 22px; font-size:.95rem; font-weight:700; cursor:pointer; font-family:inherit; }
-button:hover{ filter:brightness(1.08); }
+button.act{ background:var(--accent); color:#1a1400; border:none; border-radius:8px; padding:10px 22px; font-size:.95rem; font-weight:700; cursor:pointer; font-family:inherit; }
+button.act:hover{ filter:brightness(1.08); }
 #status{ color:var(--muted); font-size:.88rem; }
 .plots{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 .plotcard{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:8px; }
 .plotcard h3{ text-align:center; color:var(--accent2); font-size:1.05rem; margin:8px 0 0; }
 .plot{ width:100%; height:520px; }
-.note{ background:#12151d; border-left:3px solid var(--accent); border-radius:0 6px 6px 0; padding:10px 16px; margin-top:18px; color:var(--muted); font-size:.9rem; }
 @media(max-width:900px){ .plots{ grid-template-columns:1fr; } .row.r3,.row.r2{ grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <header>
+  <button id="themeBtn">Switch to light mode</button>
   <h1>RMSProp Dynamics Visualizer</h1>
-  <p>RMSProp iterated on the quadratic loss \(f(X)=\tfrac12 X^\top A X\); side-by-side 3-D phase portraits of position \(X\) and memory \(V\), in rescaled coordinates.</p>
+  <p>Side-by-side 3-D phase portraits of position \(X\) and memory \(V\), in rescaled coordinates.</p>
 </header>
 
 <div class="wrap">
 <div class="panel">
   <div class="formula">
-    The loss matrix is built from a diagonal spectrum rotated by three Euler angles:
-    \[ A \;=\; Q\,\Lambda\,Q^\top,\qquad \Lambda=\operatorname{diag}(\lambda_1,\lambda_2,\lambda_3),\qquad Q=R_z(\theta_z)\,R_y(\theta_y)\,R_x(\theta_x), \]
+    <b>Loss.</b> RMSProp is run on the quadratic loss
+    \[ f(X)=\tfrac12\,X^\top A X,\qquad \nabla f(X)=A X, \]
+    where the loss matrix is a diagonal spectrum rotated by three Euler angles,
+    \[ A=Q\,\Lambda\,Q^\top,\quad \Lambda=\operatorname{diag}(\lambda_1,\lambda_2,\lambda_3),\quad Q=R_z(\theta_z)R_y(\theta_y)R_x(\theta_x), \]
     with \(R_x,R_y,R_z\) the standard rotation matrices (angles in degrees below).
     <br><br>
-    <b>Rescaled coordinates.</b> The plots and the initial-condition inputs use the rescaled variables
-    \[ (X,V)\;\longmapsto\;\left(\tfrac{X}{h},\;\tfrac{\sqrt{V}}{h}\right), \]
-    where \(h\) is the learning rate. The learning-rate field below is given in units of \(10^{-6}\) (so a value of \(1\) means \(h=1\times10^{-6}\)).
+    <b>Map (unscaled coordinates).</b> With learning rate \(h\), decay \(\beta\), and stabilizer \(\varepsilon\) (all operations component-wise):
+    \[ V_{n+1}=\beta\,V_n+(1-\beta)\,\big(\nabla f(X_n)\big)^2,\qquad
+       X_{n+1}=X_n-\dfrac{h\,\nabla f(X_n)}{\sqrt{V_{n+1}}+\varepsilon}. \]
+    <br>
+    <b>Map (rescaled coordinates).</b> Writing \(\tilde X=X/h\) and \(\tilde V=\sqrt{V}/h\), the same dynamics become
+    \[ \tilde V_{n+1}=\sqrt{\,\beta\,\tilde V_n^{2}+(1-\beta)\,\big(\nabla f(\tilde X_n)\big)^2\,},\qquad
+       \tilde X_{n+1}=\tilde X_n-\dfrac{\nabla f(\tilde X_n)}{\tilde V_{n+1}+\varepsilon/h}. \]
+    The plots and the initial-condition inputs use these rescaled variables \((\tilde X,\tilde V)=(X/h,\ \sqrt{V}/h)\). The learning-rate field is given in units of \(10^{-6}\).
   </div>
 
-  <!-- Row 1: beta, learning rate, epsilon -->
   <div class="row r3">
     <div class="ctl">
       <label>&beta; (decay rate)</label>
       <div class="sliderline">
         <input type="range" id="beta" min="0" max="1" step="0.0001" value="0.98">
-        <span class="sval" id="beta_v">0.9800</span>
+        <input type="text" id="beta_t" value="0.98">
       </div>
     </div>
-    <div class="ctl">
-      <label>Learning rate h (&times; 10⁻⁶)</label>
-      <input type="text" id="lr" value="1">
-    </div>
-    <div class="ctl">
-      <label>&epsilon;</label>
-      <input type="text" id="eps" value="1e-7">
-    </div>
+    <div class="ctl"><label>Learning rate h (&times; 10⁻⁶)</label><input type="text" id="lr" value="1"></div>
+    <div class="ctl"><label>&epsilon;</label><input type="text" id="eps" value="1e-7"></div>
   </div>
 
-  <!-- Row 2: rotation angles -->
   <div class="row r3">
     <div class="ctl">
       <label>&theta;<sub>x</sub> (degrees)</label>
-      <div class="sliderline">
-        <input type="range" id="tx" min="-180" max="180" step="0.5" value="60">
-        <span class="sval" id="tx_v">60.0&deg;</span>
-      </div>
+      <div class="sliderline"><input type="range" id="tx" min="-180" max="180" step="0.5" value="60"><input type="text" id="tx_t" value="60"></div>
     </div>
     <div class="ctl">
       <label>&theta;<sub>y</sub> (degrees)</label>
-      <div class="sliderline">
-        <input type="range" id="ty" min="-180" max="180" step="0.5" value="-60">
-        <span class="sval" id="ty_v">-60.0&deg;</span>
-      </div>
+      <div class="sliderline"><input type="range" id="ty" min="-180" max="180" step="0.5" value="-60"><input type="text" id="ty_t" value="-60"></div>
     </div>
     <div class="ctl">
       <label>&theta;<sub>z</sub> (degrees)</label>
-      <div class="sliderline">
-        <input type="range" id="tz" min="-180" max="180" step="0.5" value="-143.5">
-        <span class="sval" id="tz_v">-143.5&deg;</span>
-      </div>
+      <div class="sliderline"><input type="range" id="tz" min="-180" max="180" step="0.5" value="-143.5"><input type="text" id="tz_t" value="-143.5"></div>
     </div>
   </div>
 
-  <!-- Row 3: eigenvalues -->
   <div class="row r3">
     <div class="ctl"><label>&lambda;&#8321;</label><input type="text" id="lam1" value="0.5"></div>
     <div class="ctl"><label>&lambda;&#8322;</label><input type="text" id="lam2" value="0.8"></div>
     <div class="ctl"><label>&lambda;&#8323;</label><input type="text" id="lam3" value="1.18"></div>
   </div>
 
-  <!-- Row 4: initial conditions (rescaled) -->
   <div class="row r2">
     <div class="ctl">
       <label>Initial position X&#8320; (rescaled)</label>
-      <div class="icgrid">
-        <input type="text" id="x01" value="0.3">
-        <input type="text" id="x02" value="0.4">
-        <input type="text" id="x03" value="-0.3">
-      </div>
+      <div class="icgrid"><input type="text" id="x01" value="0.3"><input type="text" id="x02" value="0.4"><input type="text" id="x03" value="-0.3"></div>
     </div>
     <div class="ctl">
       <label>Initial memory V&#8320; (rescaled)</label>
-      <div class="icgrid">
-        <input type="text" id="v01" value="0.2">
-        <input type="text" id="v02" value="0.2">
-        <input type="text" id="v03" value="0.2">
-      </div>
+      <div class="icgrid"><input type="text" id="v01" value="0.2"><input type="text" id="v02" value="0.2"><input type="text" id="v03" value="0.2"></div>
     </div>
   </div>
 
-  <!-- Row 5: burn-in, visualization points -->
   <div class="row r2">
     <div class="ctl"><label>Warmup (burn-in) iterations</label><input type="text" id="warmup" value="200000"></div>
     <div class="ctl"><label>Visualization points</label><input type="text" id="vispts" value="20000"></div>
   </div>
 
-  <!-- Row 6: point size, alpha -->
   <div class="row r2">
     <div class="ctl"><label>Point size</label><input type="text" id="psize" value="1.5"></div>
     <div class="ctl"><label>Alpha (opacity 0&ndash;1)</label><input type="text" id="alpha" value="0.8"></div>
   </div>
 
-  <div class="btnrow">
-    <button id="prefix1">Prefix 1</button>
-    <span id="status">Ready.</span>
-  </div>
-
-  <div class="note">
-    Note: the state \((X,V)\) is already integrated in the rescaled frame \((X/h,\ \sqrt{V}/h)\) with \(h\) the learning rate, matching the MATLAB implementation. Setting the learning-rate field to \(1\) (i.e. \(h=10^{-6}\)) reproduces the reference invariant tori.
-  </div>
+  <div class="btnrow"><button class="act" id="prefix1">Prefix 1</button><span id="status">Ready.</span></div>
 </div>
 
 <div class="plots">
@@ -171,8 +145,7 @@ function buildA(l1,l2,l3,txd,tyd,tzd){
   var Ry=[[Math.cos(ty),0,Math.sin(ty)],[0,1,0],[-Math.sin(ty),0,Math.cos(ty)]];
   var Rz=[[Math.cos(tz),-Math.sin(tz),0],[Math.sin(tz),Math.cos(tz),0],[0,0,1]];
   var Q=matmul(Rz,matmul(Ry,Rx));
-  var Lam=[[l1,0,0],[0,l2,0],[0,0,l3]];
-  return matmul(Q,matmul(Lam,transpose(Q)));
+  return matmul(Q,matmul([[l1,0,0],[0,l2,0],[0,0,l3]],transpose(Q)));
 }
 
 function simulate(p){
@@ -187,9 +160,7 @@ function simulate(p){
     var F2=[Math.sqrt(beta*W[0]*W[0]+(1-beta)*g[0]*g[0]),
             Math.sqrt(beta*W[1]*W[1]+(1-beta)*g[1]*g[1]),
             Math.sqrt(beta*W[2]*W[2]+(1-beta)*g[2]*g[2])];
-    var F1=[X[0]-g[0]/(F2[0]+eps/h),
-            X[1]-g[1]/(F2[1]+eps/h),
-            X[2]-g[2]/(F2[2]+eps/h)];
+    var F1=[X[0]-g[0]/(F2[0]+eps/h),X[1]-g[1]/(F2[1]+eps/h),X[2]-g[2]/(F2[2]+eps/h)];
     X=F1; W=F2;
     if(n>=start){ Xh[0].push(X[0]);Xh[1].push(X[1]);Xh[2].push(X[2]);
                   Wh[0].push(W[0]);Wh[1].push(W[1]);Wh[2].push(W[2]); }
@@ -197,44 +168,51 @@ function simulate(p){
   return {Xh:Xh,Wh:Wh};
 }
 
-function scene(a,b,c){ return {
-  xaxis:{title:a,gridcolor:'#2a2f3d',zerolinecolor:'#3a4152',backgroundcolor:'#12151d',showbackground:true,showticklabels:false},
-  yaxis:{title:b,gridcolor:'#2a2f3d',zerolinecolor:'#3a4152',backgroundcolor:'#12151d',showbackground:true,showticklabels:false},
-  zaxis:{title:c,gridcolor:'#2a2f3d',zerolinecolor:'#3a4152',backgroundcolor:'#12151d',showbackground:true,showticklabels:false},
+function themeColors(){
+  var s=getComputedStyle(document.documentElement);
+  return {paper:s.getPropertyValue('--panel').trim(), sub:s.getPropertyValue('--sub').trim(),
+          ink:s.getPropertyValue('--ink').trim(), line:s.getPropertyValue('--line').trim(),
+          green:s.getPropertyValue('--green').trim(), mag:s.getPropertyValue('--mag').trim()};
+}
+function scene(a,b,c,C){ return {
+  xaxis:{title:a,gridcolor:C.line,zerolinecolor:C.line,backgroundcolor:C.sub,showbackground:true,showticklabels:false},
+  yaxis:{title:b,gridcolor:C.line,zerolinecolor:C.line,backgroundcolor:C.sub,showbackground:true,showticklabels:false},
+  zaxis:{title:c,gridcolor:C.line,zerolinecolor:C.line,backgroundcolor:C.sub,showbackground:true,showticklabels:false},
   aspectmode:'data', camera:{eye:{x:1.5,y:-1.9,z:1.1}}
 };}
 
+var lastRes=null, lastPs=1.5, lastAlpha=0.8;
 function draw(res,ps,alpha){
-  var common={paper_bgcolor:'#181c26',font:{color:'#e8e6df',family:'Cambria, serif'},margin:{l:0,r:0,t:0,b:0}};
+  lastRes=res; lastPs=ps; lastAlpha=alpha;
+  var C=themeColors();
+  var common={paper_bgcolor:C.paper,font:{color:C.ink,family:'Cambria, serif'},margin:{l:0,r:0,t:0,b:0}};
   Plotly.react('plotX',[{type:'scatter3d',mode:'markers',x:res.Xh[0],y:res.Xh[1],z:res.Xh[2],
-    marker:{size:ps,color:'#57d38c',opacity:alpha}}],
-    Object.assign({scene:scene('X\u2081','X\u2082','X\u2083')},common),{responsive:true});
+    marker:{size:ps,color:C.green,opacity:alpha}}],
+    Object.assign({scene:scene('X\u2081','X\u2082','X\u2083',C)},common),{responsive:true});
   Plotly.react('plotW',[{type:'scatter3d',mode:'markers',x:res.Wh[0],y:res.Wh[1],z:res.Wh[2],
-    marker:{size:ps,color:'#d67ad6',opacity:alpha}}],
-    Object.assign({scene:scene('V\u2081','V\u2082','V\u2083')},common),{responsive:true});
+    marker:{size:ps,color:C.mag,opacity:alpha}}],
+    Object.assign({scene:scene('V\u2081','V\u2082','V\u2083',C)},common),{responsive:true});
 }
 
 function num(id){return parseFloat(document.getElementById(id).value);}
 function readParams(){
-  return {
-    beta:num('beta'),
-    h:num('lr')*1e-6,
-    eps:num('eps'),
+  return { beta:num('beta'), h:num('lr')*1e-6, eps:num('eps'),
     l1:num('lam1'), l2:num('lam2'), l3:num('lam3'),
     tx:num('tx'), ty:num('ty'), tz:num('tz'),
     x01:num('x01'), x02:num('x02'), x03:num('x03'),
     v01:num('v01'), v02:num('v02'), v03:num('v03'),
     warmup:parseInt(document.getElementById('warmup').value,10),
-    vispts:parseInt(document.getElementById('vispts').value,10)
-  };
+    vispts:parseInt(document.getElementById('vispts').value,10) };
+}
+
+/* keep slider <-> text box in sync */
+function link(slider,text){
+  document.getElementById(slider).addEventListener('input',function(){document.getElementById(text).value=this.value; scheduleRun();});
+  document.getElementById(text).addEventListener('input',function(){var v=parseFloat(this.value); if(isFinite(v)){document.getElementById(slider).value=v;} scheduleRun();});
 }
 
 var timer=null;
 function scheduleRun(){
-  document.getElementById('beta_v').textContent=num('beta').toFixed(4);
-  document.getElementById('tx_v').textContent=num('tx').toFixed(1)+'\u00b0';
-  document.getElementById('ty_v').textContent=num('ty').toFixed(1)+'\u00b0';
-  document.getElementById('tz_v').textContent=num('tz').toFixed(1)+'\u00b0';
   var st=document.getElementById('status'); st.textContent='Simulating...';
   if(timer) clearTimeout(timer);
   timer=setTimeout(function(){
@@ -242,39 +220,30 @@ function scheduleRun(){
     if(!isFinite(p.beta)||!isFinite(p.h)||p.h===0||!isFinite(p.eps)||!p.warmup||!p.vispts){ st.textContent='Waiting for valid input...'; return; }
     var ps=num('psize'), alpha=num('alpha');
     var t0=performance.now();
-    var res=simulate(p);
-    draw(res,ps,alpha);
-    var dt=((performance.now()-t0)/1000).toFixed(2);
-    st.textContent='Done: '+p.vispts+' points ('+(p.warmup+p.vispts)+' iters) in '+dt+'s.';
+    draw(simulate(p),ps,alpha);
+    st.textContent='Done: '+p.vispts+' points ('+(p.warmup+p.vispts)+' iters) in '+((performance.now()-t0)/1000).toFixed(2)+'s.';
   },250);
 }
 
-['beta','lr','eps','lam1','lam2','lam3','tx','ty','tz','x01','x02','x03','v01','v02','v03','warmup','vispts','psize','alpha'].forEach(function(id){
-  var el=document.getElementById(id);
-  el.addEventListener('input',scheduleRun);
-  el.addEventListener('change',scheduleRun);
+link('beta','beta_t'); link('tx','tx_t'); link('ty','ty_t'); link('tz','tz_t');
+['lr','eps','lam1','lam2','lam3','x01','x02','x03','v01','v02','v03','warmup','vispts','psize','alpha'].forEach(function(id){
+  var el=document.getElementById(id); el.addEventListener('input',scheduleRun); el.addEventListener('change',scheduleRun);
+});
+
+document.getElementById('themeBtn').addEventListener('click',function(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  var next=(cur==='dark')?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  this.textContent=(next==='dark')?'Switch to light mode':'Switch to dark mode';
+  if(lastRes) draw(lastRes,lastPs,lastAlpha);
 });
 
 document.getElementById('prefix1').addEventListener('click',function(){
-  document.getElementById('beta').value=0.98;
-  document.getElementById('lr').value='1';
-  document.getElementById('eps').value='1e-7';
-  document.getElementById('lam1').value='0.5';
-  document.getElementById('lam2').value='0.8';
-  document.getElementById('lam3').value='1.18';
-  document.getElementById('tx').value=60;
-  document.getElementById('ty').value=-60;
-  document.getElementById('tz').value=-143.5;
-  document.getElementById('x01').value='0.3';
-  document.getElementById('x02').value='0.4';
-  document.getElementById('x03').value='-0.3';
-  document.getElementById('v01').value='0.2';
-  document.getElementById('v02').value='0.2';
-  document.getElementById('v03').value='0.2';
-  document.getElementById('psize').value='1.5';
-  document.getElementById('alpha').value='0.8';
-  document.getElementById('vispts').value='20000';
-  document.getElementById('warmup').value='200000';
+  var set={beta:0.98,beta_t:0.98,lr:'1',eps:'1e-7',lam1:'0.5',lam2:'0.8',lam3:'1.18',
+    tx:60,tx_t:60,ty:-60,ty_t:-60,tz:-143.5,tz_t:-143.5,
+    x01:'0.3',x02:'0.4',x03:'-0.3',v01:'0.2',v02:'0.2',v03:'0.2',
+    psize:'1.5',alpha:'0.8',vispts:'20000',warmup:'200000'};
+  for(var k in set) document.getElementById(k).value=set[k];
   scheduleRun();
 });
 
