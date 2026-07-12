@@ -19,7 +19,7 @@ header{ padding:34px 24px 20px; text-align:center; border-bottom:1px solid var(-
 header h1{ font-size:2rem; margin:0 0 6px; color:var(--accent); }
 header p{ color:var(--muted); margin:0; font-size:.98rem; }
 #themeBtn{ position:absolute; top:20px; right:24px; background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:8px 14px; cursor:pointer; font-family:inherit; font-size:.85rem; }
-.wrap{ max-width:1500px; margin:0 auto; padding:22px; }
+.wrap{ max-width:1600px; margin:0 auto; padding:22px; }
 .panel{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px 22px; margin-bottom:20px; }
 .formula{ background:var(--sub); border:1px solid var(--line); border-radius:8px; padding:12px 18px; margin-bottom:18px; color:var(--muted); font-size:.95rem; overflow-x:auto; }
 .formula b{ color:var(--accent2); }
@@ -41,8 +41,8 @@ button.act:hover{ filter:brightness(1.08); }
 .plots{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 .plotcard{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:8px; }
 .plotcard h3{ text-align:center; color:var(--accent2); font-size:1.05rem; margin:8px 0 0; }
-.plot{ width:100%; height:520px; }
-@media(max-width:900px){ .plots{ grid-template-columns:1fr; } .row.r3,.row.r2{ grid-template-columns:1fr; } }
+.plot{ width:100%; height:720px; }
+@media(max-width:900px){ .plots{ grid-template-columns:1fr; } .row.r3,.row.r2{ grid-template-columns:1fr; } .plot{ height:520px; } }
 </style>
 </head>
 <body>
@@ -168,18 +168,32 @@ function simulate(p){
   return {Xh:Xh,Wh:Wh};
 }
 
+/* compute a padded [min,max] range for one axis so a collapsed (fixed-point)
+   cluster still gets a visible, finite box */
+function axisRange(arr){
+  var mn=Infinity, mx=-Infinity;
+  for(var i=0;i<arr.length;i++){ var v=arr[i]; if(v<mn)mn=v; if(v>mx)mx=v; }
+  if(!isFinite(mn)||!isFinite(mx)){ return [-1,1]; }
+  var c=(mn+mx)/2, span=mx-mn;
+  var pad = span>1e-9 ? span*0.08 : Math.max(Math.abs(c)*0.1, 0.5); // fixed-point -> generous pad
+  return [mn-pad, mx+pad];
+}
+
 function themeColors(){
   var s=getComputedStyle(document.documentElement);
   return {paper:s.getPropertyValue('--panel').trim(), sub:s.getPropertyValue('--sub').trim(),
           ink:s.getPropertyValue('--ink').trim(), line:s.getPropertyValue('--line').trim(),
           green:s.getPropertyValue('--green').trim(), mag:s.getPropertyValue('--mag').trim()};
 }
-function scene(a,b,c,C){ return {
-  xaxis:{title:a,gridcolor:C.line,zerolinecolor:C.line,backgroundcolor:C.sub,showbackground:true,showticklabels:false},
-  yaxis:{title:b,gridcolor:C.line,zerolinecolor:C.line,backgroundcolor:C.sub,showbackground:true,showticklabels:false},
-  zaxis:{title:c,gridcolor:C.line,zerolinecolor:C.line,backgroundcolor:C.sub,showbackground:true,showticklabels:false},
-  aspectmode:'data', camera:{eye:{x:1.5,y:-1.9,z:1.1}}
-};}
+function scene(labels,data,C){
+  var rx=axisRange(data[0]), ry=axisRange(data[1]), rz=axisRange(data[2]);
+  return {
+    xaxis:{title:labels[0],range:rx,gridcolor:C.line,zerolinecolor:C.line,backgroundcolor:C.sub,showbackground:true,showticklabels:false},
+    yaxis:{title:labels[1],range:ry,gridcolor:C.line,zerolinecolor:C.line,backgroundcolor:C.sub,showbackground:true,showticklabels:false},
+    zaxis:{title:labels[2],range:rz,gridcolor:C.line,zerolinecolor:C.line,backgroundcolor:C.sub,showbackground:true,showticklabels:false},
+    aspectmode:'cube', camera:{eye:{x:1.5,y:-1.9,z:1.1}}
+  };
+}
 
 var lastRes=null, lastPs=1.5, lastAlpha=0.8;
 function draw(res,ps,alpha){
@@ -188,10 +202,10 @@ function draw(res,ps,alpha){
   var common={paper_bgcolor:C.paper,font:{color:C.ink,family:'Cambria, serif'},margin:{l:0,r:0,t:0,b:0}};
   Plotly.react('plotX',[{type:'scatter3d',mode:'markers',x:res.Xh[0],y:res.Xh[1],z:res.Xh[2],
     marker:{size:ps,color:C.green,opacity:alpha}}],
-    Object.assign({scene:scene('X\u2081','X\u2082','X\u2083',C)},common),{responsive:true});
+    Object.assign({scene:scene(['X\u2081','X\u2082','X\u2083'],res.Xh,C)},common),{responsive:true});
   Plotly.react('plotW',[{type:'scatter3d',mode:'markers',x:res.Wh[0],y:res.Wh[1],z:res.Wh[2],
     marker:{size:ps,color:C.mag,opacity:alpha}}],
-    Object.assign({scene:scene('V\u2081','V\u2082','V\u2083',C)},common),{responsive:true});
+    Object.assign({scene:scene(['V\u2081','V\u2082','V\u2083'],res.Wh,C)},common),{responsive:true});
 }
 
 function num(id){return parseFloat(document.getElementById(id).value);}
@@ -205,7 +219,6 @@ function readParams(){
     vispts:parseInt(document.getElementById('vispts').value,10) };
 }
 
-/* keep slider <-> text box in sync */
 function link(slider,text){
   document.getElementById(slider).addEventListener('input',function(){document.getElementById(text).value=this.value; scheduleRun();});
   document.getElementById(text).addEventListener('input',function(){var v=parseFloat(this.value); if(isFinite(v)){document.getElementById(slider).value=v;} scheduleRun();});
