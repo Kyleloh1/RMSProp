@@ -20,7 +20,9 @@ header p{ color:var(--muted); margin:0; font-size:.98rem; }
 .wrap{ max-width:1500px; margin:0 auto; padding:22px; }
 .panel{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px 22px; margin-bottom:20px; }
 .formula{ background:#12151d; border:1px solid var(--line); border-radius:8px; padding:10px 16px; margin-bottom:18px; color:var(--muted); font-size:.95rem; overflow-x:auto; }
-.controls{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px 26px; }
+.row{ display:grid; gap:16px 26px; margin-bottom:16px; }
+.row.r3{ grid-template-columns:repeat(3,1fr); }
+.row.r2{ grid-template-columns:repeat(2,1fr); }
 .ctl{ display:flex; flex-direction:column; gap:5px; }
 .ctl label{ font-size:.85rem; color:var(--accent2); font-weight:600; }
 .ctl input{ background:#0f1117; border:1px solid var(--line); color:var(--ink); border-radius:6px; padding:7px 9px; font-size:.92rem; font-family:'Cambria Math', Cambria, serif; }
@@ -29,8 +31,7 @@ header p{ color:var(--muted); margin:0; font-size:.98rem; }
 .sliderline input[type=range]{ flex:1; }
 .sval{ color:var(--accent); min-width:66px; text-align:right; font-family:'Cambria Math', Cambria, serif; }
 .lamgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-.prefixlbl{ color:var(--muted); font-size:.8rem; margin-bottom:4px; }
-.btnrow{ display:flex; gap:14px; align-items:center; margin-top:18px; flex-wrap:wrap;}
+.btnrow{ display:flex; gap:14px; align-items:center; margin-top:6px; flex-wrap:wrap;}
 button{ background:var(--accent); color:#1a1400; border:none; border-radius:8px; padding:10px 22px; font-size:.95rem; font-weight:700; cursor:pointer; font-family:inherit; }
 button:hover{ filter:brightness(1.08); }
 #status{ color:var(--muted); font-size:.88rem; }
@@ -38,13 +39,13 @@ button:hover{ filter:brightness(1.08); }
 .plotcard{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:8px; }
 .plotcard h3{ text-align:center; color:var(--accent2); font-size:1.05rem; margin:8px 0 0; }
 .plot{ width:100%; height:520px; }
-@media(max-width:900px){ .plots{ grid-template-columns:1fr; } }
+@media(max-width:900px){ .plots{ grid-template-columns:1fr; } .row.r3,.row.r2{ grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <header>
   <h1>RMSProp Dynamics Visualizer</h1>
-  <p>RMSProp iterated on the quadratic loss \(f(X)=\tfrac12 X^\top A X\); side-by-side 3-D phase portraits of position \(X\) and pre-conditioner \(W\).</p>
+  <p>RMSProp iterated on the quadratic loss \(f(X)=\tfrac12 X^\top A X\); side-by-side 3-D phase portraits of position \(X\) and memory \(V\).</p>
 </header>
 
 <div class="wrap">
@@ -54,7 +55,9 @@ button:hover{ filter:brightness(1.08); }
     \[ A \;=\; Q\,\Lambda\,Q^\top,\qquad \Lambda=\operatorname{diag}(\lambda_1,\lambda_2,\lambda_3),\qquad Q=R_z(\theta_z)\,R_y(\theta_y)\,R_x(\theta_x). \]
     where \(R_x,R_y,R_z\) are the standard rotation matrices about each axis (angles in degrees below).
   </div>
-  <div class="controls">
+
+  <!-- Row 1: beta, learning rate, epsilon -->
+  <div class="row r3">
     <div class="ctl">
       <label>&beta; (decay rate)</label>
       <div class="sliderline">
@@ -70,14 +73,10 @@ button:hover{ filter:brightness(1.08); }
       <label>&epsilon;</label>
       <input type="text" id="eps" value="1e-7">
     </div>
-    <div class="ctl">
-      <label>&Lambda; eigenvalues &nbsp; &Lambda; = diag([ &lambda;&#8321;, &lambda;&#8322;, &lambda;&#8323; ])</label>
-      <div class="lamgrid">
-        <input type="text" id="lam1" value="0.5">
-        <input type="text" id="lam2" value="0.8">
-        <input type="text" id="lam3" value="1.18">
-      </div>
-    </div>
+  </div>
+
+  <!-- Row 2: rotation angles -->
+  <div class="row r3">
     <div class="ctl">
       <label>&theta;<sub>x</sub> (degrees)</label>
       <div class="sliderline">
@@ -99,6 +98,26 @@ button:hover{ filter:brightness(1.08); }
         <span class="sval" id="tz_v">-143.5&deg;</span>
       </div>
     </div>
+  </div>
+
+  <!-- Row 3: eigenvalues -->
+  <div class="row r3">
+    <div class="ctl">
+      <label>&lambda;&#8321;</label>
+      <input type="text" id="lam1" value="0.5">
+    </div>
+    <div class="ctl">
+      <label>&lambda;&#8322;</label>
+      <input type="text" id="lam2" value="0.8">
+    </div>
+    <div class="ctl">
+      <label>&lambda;&#8323;</label>
+      <input type="text" id="lam3" value="1.18">
+    </div>
+  </div>
+
+  <!-- Row 4: burn-in, visualization points -->
+  <div class="row r2">
     <div class="ctl">
       <label>Warmup (burn-in) iterations</label>
       <input type="text" id="warmup" value="200000">
@@ -107,6 +126,10 @@ button:hover{ filter:brightness(1.08); }
       <label>Visualization points</label>
       <input type="text" id="vispts" value="20000">
     </div>
+  </div>
+
+  <!-- Row 5: point size, alpha -->
+  <div class="row r2">
     <div class="ctl">
       <label>Point size</label>
       <input type="text" id="psize" value="1.5">
@@ -116,6 +139,7 @@ button:hover{ filter:brightness(1.08); }
       <input type="text" id="alpha" value="0.8">
     </div>
   </div>
+
   <div class="btnrow">
     <button id="prefix1">Prefix 1</button>
     <span id="status">Ready.</span>
@@ -124,7 +148,7 @@ button:hover{ filter:brightness(1.08); }
 
 <div class="plots">
   <div class="plotcard"><h3>Position Dynamics (X-Phase)</h3><div id="plotX" class="plot"></div></div>
-  <div class="plotcard"><h3>Pre-conditioner Dynamics (W-Phase)</h3><div id="plotW" class="plot"></div></div>
+  <div class="plotcard"><h3>Memory Dynamics (V-Phase)</h3><div id="plotW" class="plot"></div></div>
 </div>
 </div>
 
@@ -179,7 +203,7 @@ function draw(res,ps,alpha){
     Object.assign({scene:scene('X\u2081','X\u2082','X\u2083')},common),{responsive:true});
   Plotly.react('plotW',[{type:'scatter3d',mode:'markers',x:res.Wh[0],y:res.Wh[1],z:res.Wh[2],
     marker:{size:ps,color:'#d67ad6',opacity:alpha}}],
-    Object.assign({scene:scene('W\u2081','W\u2082','W\u2083')},common),{responsive:true});
+    Object.assign({scene:scene('V\u2081','V\u2082','V\u2083')},common),{responsive:true});
 }
 
 function readParams(){
