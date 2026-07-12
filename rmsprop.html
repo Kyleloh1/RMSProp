@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RMSProp Dynamics Visualizer</title>
+<script>
+MathJax = { tex:{ inlineMath:[['\\(','\\)']], displayMath:[['\\[','\\]']] }, svg:{ fontCache:'global' } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" id="MathJax-script" async></script>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<style>
+:root{ --bg:#0f1117; --panel:#181c26; --ink:#e8e6df; --muted:#a9a496; --accent:#c9a45c; --accent2:#7fb2c9; --line:#2a2f3d; --green:#57d38c; --mag:#d67ad6;}
+*{box-sizing:border-box;}
+body{ margin:0; background:var(--bg); color:var(--ink);
+  font-family: Cambria, 'Cambria Math', 'Gentium Book Plus', 'Charter', 'Palatino Linotype', 'Book Antiqua', serif; line-height:1.55; }
+header{ padding:34px 24px 20px; text-align:center; border-bottom:1px solid var(--line); }
+header h1{ font-size:2rem; margin:0 0 6px; color:var(--accent); }
+header p{ color:var(--muted); margin:0; font-size:.98rem; }
+.wrap{ max-width:1500px; margin:0 auto; padding:22px; }
+.panel{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px 22px; margin-bottom:20px; }
+.formula{ background:#12151d; border:1px solid var(--line); border-radius:8px; padding:10px 16px; margin-bottom:18px; color:var(--muted); font-size:.95rem; overflow-x:auto; }
+.controls{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px 26px; }
+.ctl{ display:flex; flex-direction:column; gap:5px; }
+.ctl label{ font-size:.85rem; color:var(--accent2); font-weight:600; }
+.ctl input{ background:#0f1117; border:1px solid var(--line); color:var(--ink); border-radius:6px; padding:7px 9px; font-size:.92rem; font-family:'Cambria Math', Cambria, serif; }
+.ctl input[type=range]{ padding:0; accent-color:var(--accent); }
+.sliderline{ display:flex; align-items:center; gap:10px; }
+.sliderline input[type=range]{ flex:1; }
+.sval{ color:var(--accent); min-width:66px; text-align:right; font-family:'Cambria Math', Cambria, serif; }
+.lamgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.prefixlbl{ color:var(--muted); font-size:.8rem; margin-bottom:4px; }
+.btnrow{ display:flex; gap:14px; align-items:center; margin-top:18px; flex-wrap:wrap;}
+button{ background:var(--accent); color:#1a1400; border:none; border-radius:8px; padding:10px 22px; font-size:.95rem; font-weight:700; cursor:pointer; font-family:inherit; }
+button:hover{ filter:brightness(1.08); }
+#status{ color:var(--muted); font-size:.88rem; }
+.plots{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.plotcard{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:8px; }
+.plotcard h3{ text-align:center; color:var(--accent2); font-size:1.05rem; margin:8px 0 0; }
+.plot{ width:100%; height:520px; }
+@media(max-width:900px){ .plots{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>RMSProp Dynamics Visualizer</h1>
+  <p>RMSProp iterated on the quadratic loss \(f(X)=\tfrac12 X^\top A X\); side-by-side 3-D phase portraits of position \(X\) and pre-conditioner \(W\).</p>
+</header>
+
+<div class="wrap">
+<div class="panel">
+  <div class="formula">
+    The loss matrix is built from a diagonal spectrum rotated by three Euler angles:
+    \[ A \;=\; Q\,\Lambda\,Q^\top,\qquad \Lambda=\operatorname{diag}(\lambda_1,\lambda_2,\lambda_3),\qquad Q=R_z(\theta_z)\,R_y(\theta_y)\,R_x(\theta_x). \]
+    where \(R_x,R_y,R_z\) are the standard rotation matrices about each axis (angles in degrees below).
+  </div>
+  <div class="controls">
+    <div class="ctl">
+      <label>&beta; (decay rate)</label>
+      <div class="sliderline">
+        <input type="range" id="beta" min="0" max="1" step="0.0001" value="0.98">
+        <span class="sval" id="beta_v">0.9800</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label>Learning rate</label>
+      <input type="text" id="lr" value="2e-6">
+    </div>
+    <div class="ctl">
+      <label>&epsilon;</label>
+      <input type="text" id="eps" value="1e-7">
+    </div>
+    <div class="ctl">
+      <label>&Lambda; eigenvalues &nbsp; &Lambda; = diag([ &lambda;&#8321;, &lambda;&#8322;, &lambda;&#8323; ])</label>
+      <div class="lamgrid">
+        <input type="text" id="lam1" value="0.5">
+        <input type="text" id="lam2" value="0.8">
+        <input type="text" id="lam3" value="1.18">
+      </div>
+    </div>
+    <div class="ctl">
+      <label>&theta;<sub>x</sub> (degrees)</label>
+      <div class="sliderline">
+        <input type="range" id="tx" min="-180" max="180" step="0.5" value="60">
+        <span class="sval" id="tx_v">60.0&deg;</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label>&theta;<sub>y</sub> (degrees)</label>
+      <div class="sliderline">
+        <input type="range" id="ty" min="-180" max="180" step="0.5" value="-60">
+        <span class="sval" id="ty_v">-60.0&deg;</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label>&theta;<sub>z</sub> (degrees)</label>
+      <div class="sliderline">
+        <input type="range" id="tz" min="-180" max="180" step="0.5" value="-143.5">
+        <span class="sval" id="tz_v">-143.5&deg;</span>
+      </div>
+    </div>
+    <div class="ctl">
+      <label>Warmup (burn-in) iterations</label>
+      <input type="text" id="warmup" value="200000">
+    </div>
+    <div class="ctl">
+      <label>Visualization points</label>
+      <input type="text" id="vispts" value="20000">
+    </div>
+    <div class="ctl">
+      <label>Point size</label>
+      <input type="text" id="psize" value="1.5">
+    </div>
+    <div class="ctl">
+      <label>Alpha (opacity 0&ndash;1)</label>
+      <input type="text" id="alpha" value="0.8">
+    </div>
+  </div>
+  <div class="btnrow">
+    <button id="prefix1">Prefix 1</button>
+    <span id="status">Ready.</span>
+  </div>
+</div>
+
+<div class="plots">
+  <div class="plotcard"><h3>Position Dynamics (X-Phase)</h3><div id="plotX" class="plot"></div></div>
+  <div class="plotcard"><h3>Pre-conditioner Dynamics (W-Phase)</h3><div id="plotW" class="plot"></div></div>
+</div>
+</div>
+
+<script>
+function matmul(A,B){var C=[[0,0,0],[0,0,0],[0,0,0]];for(var i=0;i<3;i++)for(var j=0;j<3;j++){var s=0;for(var k=0;k<3;k++)s+=A[i][k]*B[k][j];C[i][j]=s;}return C;}
+function transpose(A){return [[A[0][0],A[1][0],A[2][0]],[A[0][1],A[1][1],A[2][1]],[A[0][2],A[1][2],A[2][2]]];}
+function matvec(A,v){return [A[0][0]*v[0]+A[0][1]*v[1]+A[0][2]*v[2],A[1][0]*v[0]+A[1][1]*v[1]+A[1][2]*v[2],A[2][0]*v[0]+A[2][1]*v[1]+A[2][2]*v[2]];}
+
+function buildA(l1,l2,l3,txd,tyd,tzd){
+  var tx=txd*Math.PI/180, ty=tyd*Math.PI/180, tz=tzd*Math.PI/180;
+  var Rx=[[1,0,0],[0,Math.cos(tx),-Math.sin(tx)],[0,Math.sin(tx),Math.cos(tx)]];
+  var Ry=[[Math.cos(ty),0,Math.sin(ty)],[0,1,0],[-Math.sin(ty),0,Math.cos(ty)]];
+  var Rz=[[Math.cos(tz),-Math.sin(tz),0],[Math.sin(tz),Math.cos(tz),0],[0,0,1]];
+  var Q=matmul(Rz,matmul(Ry,Rx));
+  var Lam=[[l1,0,0],[0,l2,0],[0,0,l3]];
+  return matmul(Q,matmul(Lam,transpose(Q)));
+}
+
+function simulate(p){
+  var A=buildA(p.l1,p.l2,p.l3,p.tx,p.ty,p.tz);
+  var h=1.04e-6, eps=p.eps, beta=p.beta, lr=p.lr;
+  function sgrad(X){ var hx=[h*X[0],h*X[1],h*X[2]]; var g=matvec(A,hx); return [g[0]/h,g[1]/h,g[2]/h]; }
+  var X=[0.3,0.4,-0.3], W=[0.2,0.2,0.2];
+  var total=p.warmup+p.vispts, start=p.warmup+1;
+  var Xh=[[],[],[]], Wh=[[],[],[]];
+  for(var n=1;n<=total;n++){
+    var g=sgrad(X);
+    var F2=[Math.sqrt(beta*W[0]*W[0]+(1-beta)*g[0]*g[0]),
+            Math.sqrt(beta*W[1]*W[1]+(1-beta)*g[1]*g[1]),
+            Math.sqrt(beta*W[2]*W[2]+(1-beta)*g[2]*g[2])];
+    var F1=[X[0]-lr*g[0]/(F2[0]+eps/h),
+            X[1]-lr*g[1]/(F2[1]+eps/h),
+            X[2]-lr*g[2]/(F2[2]+eps/h)];
+    X=F1; W=F2;
+    if(n>=start){ Xh[0].push(X[0]);Xh[1].push(X[1]);Xh[2].push(X[2]);
+                  Wh[0].push(W[0]);Wh[1].push(W[1]);Wh[2].push(W[2]); }
+  }
+  return {Xh:Xh,Wh:Wh};
+}
+
+function scene(a,b,c){ return {
+  xaxis:{title:a,gridcolor:'#2a2f3d',zerolinecolor:'#3a4152',backgroundcolor:'#12151d',showbackground:true},
+  yaxis:{title:b,gridcolor:'#2a2f3d',zerolinecolor:'#3a4152',backgroundcolor:'#12151d',showbackground:true},
+  zaxis:{title:c,gridcolor:'#2a2f3d',zerolinecolor:'#3a4152',backgroundcolor:'#12151d',showbackground:true},
+  aspectmode:'data', camera:{eye:{x:1.5,y:-1.9,z:1.1}}
+};}
+
+function draw(res,ps,alpha){
+  var common={paper_bgcolor:'#181c26',font:{color:'#e8e6df',family:'Cambria, serif'},margin:{l:0,r:0,t:0,b:0}};
+  Plotly.react('plotX',[{type:'scatter3d',mode:'markers',x:res.Xh[0],y:res.Xh[1],z:res.Xh[2],
+    marker:{size:ps,color:'#57d38c',opacity:alpha}}],
+    Object.assign({scene:scene('X\u2081','X\u2082','X\u2083')},common),{responsive:true});
+  Plotly.react('plotW',[{type:'scatter3d',mode:'markers',x:res.Wh[0],y:res.Wh[1],z:res.Wh[2],
+    marker:{size:ps,color:'#d67ad6',opacity:alpha}}],
+    Object.assign({scene:scene('W\u2081','W\u2082','W\u2083')},common),{responsive:true});
+}
+
+function readParams(){
+  return {
+    beta:parseFloat(document.getElementById('beta').value),
+    lr:parseFloat(document.getElementById('lr').value),
+    eps:parseFloat(document.getElementById('eps').value),
+    l1:parseFloat(document.getElementById('lam1').value),
+    l2:parseFloat(document.getElementById('lam2').value),
+    l3:parseFloat(document.getElementById('lam3').value),
+    tx:parseFloat(document.getElementById('tx').value),
+    ty:parseFloat(document.getElementById('ty').value),
+    tz:parseFloat(document.getElementById('tz').value),
+    warmup:parseInt(document.getElementById('warmup').value,10),
+    vispts:parseInt(document.getElementById('vispts').value,10)
+  };
+}
+
+var timer=null;
+function scheduleRun(){
+  document.getElementById('beta_v').textContent=parseFloat(document.getElementById('beta').value).toFixed(4);
+  document.getElementById('tx_v').textContent=parseFloat(document.getElementById('tx').value).toFixed(1)+'\u00b0';
+  document.getElementById('ty_v').textContent=parseFloat(document.getElementById('ty').value).toFixed(1)+'\u00b0';
+  document.getElementById('tz_v').textContent=parseFloat(document.getElementById('tz').value).toFixed(1)+'\u00b0';
+  var st=document.getElementById('status'); st.textContent='Simulating...';
+  if(timer) clearTimeout(timer);
+  timer=setTimeout(function(){
+    var p=readParams();
+    if(!isFinite(p.beta)||!isFinite(p.lr)||!isFinite(p.eps)||!p.warmup||!p.vispts){ st.textContent='Waiting for valid input...'; return; }
+    var ps=parseFloat(document.getElementById('psize').value);
+    var alpha=parseFloat(document.getElementById('alpha').value);
+    var t0=performance.now();
+    var res=simulate(p);
+    draw(res,ps,alpha);
+    var dt=((performance.now()-t0)/1000).toFixed(2);
+    st.textContent='Done: '+p.vispts+' points ('+(p.warmup+p.vispts)+' iters) in '+dt+'s.';
+  },250);
+}
+
+['beta','lr','eps','lam1','lam2','lam3','tx','ty','tz','warmup','vispts','psize','alpha'].forEach(function(id){
+  var el=document.getElementById(id);
+  el.addEventListener('input',scheduleRun);
+  el.addEventListener('change',scheduleRun);
+});
+
+document.getElementById('prefix1').addEventListener('click',function(){
+  document.getElementById('beta').value=0.98;
+  document.getElementById('lr').value='2e-6';
+  document.getElementById('eps').value='1e-7';
+  document.getElementById('lam1').value='0.5';
+  document.getElementById('lam2').value='0.8';
+  document.getElementById('lam3').value='1.18';
+  document.getElementById('tx').value=60;
+  document.getElementById('ty').value=-60;
+  document.getElementById('tz').value=-143.5;
+  document.getElementById('psize').value='1.5';
+  document.getElementById('alpha').value='0.8';
+  document.getElementById('vispts').value='20000';
+  document.getElementById('warmup').value='200000';
+  scheduleRun();
+});
+
+window.addEventListener('load',scheduleRun);
+</script>
+</body>
+</html>
