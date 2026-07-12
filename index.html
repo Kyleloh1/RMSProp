@@ -30,7 +30,7 @@ header p{ color:var(--muted); margin:0; font-size:.98rem; }
 .sliderline{ display:flex; align-items:center; gap:10px; }
 .sliderline input[type=range]{ flex:1; }
 .sval{ color:var(--accent); min-width:66px; text-align:right; font-family:'Cambria Math', Cambria, serif; }
-.lamgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.icgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 .btnrow{ display:flex; gap:14px; align-items:center; margin-top:6px; flex-wrap:wrap;}
 button{ background:var(--accent); color:#1a1400; border:none; border-radius:8px; padding:10px 22px; font-size:.95rem; font-weight:700; cursor:pointer; font-family:inherit; }
 button:hover{ filter:brightness(1.08); }
@@ -39,21 +39,26 @@ button:hover{ filter:brightness(1.08); }
 .plotcard{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:8px; }
 .plotcard h3{ text-align:center; color:var(--accent2); font-size:1.05rem; margin:8px 0 0; }
 .plot{ width:100%; height:520px; }
+.note{ background:#12151d; border-left:3px solid var(--accent); border-radius:0 6px 6px 0; padding:10px 16px; margin-top:18px; color:var(--muted); font-size:.9rem; }
 @media(max-width:900px){ .plots{ grid-template-columns:1fr; } .row.r3,.row.r2{ grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <header>
   <h1>RMSProp Dynamics Visualizer</h1>
-  <p>RMSProp iterated on the quadratic loss \(f(X)=\tfrac12 X^\top A X\); side-by-side 3-D phase portraits of position \(X\) and memory \(V\).</p>
+  <p>RMSProp iterated on the quadratic loss \(f(X)=\tfrac12 X^\top A X\); side-by-side 3-D phase portraits of position \(X\) and memory \(V\), in rescaled coordinates.</p>
 </header>
 
 <div class="wrap">
 <div class="panel">
   <div class="formula">
     The loss matrix is built from a diagonal spectrum rotated by three Euler angles:
-    \[ A \;=\; Q\,\Lambda\,Q^\top,\qquad \Lambda=\operatorname{diag}(\lambda_1,\lambda_2,\lambda_3),\qquad Q=R_z(\theta_z)\,R_y(\theta_y)\,R_x(\theta_x). \]
-    where \(R_x,R_y,R_z\) are the standard rotation matrices about each axis (angles in degrees below).
+    \[ A \;=\; Q\,\Lambda\,Q^\top,\qquad \Lambda=\operatorname{diag}(\lambda_1,\lambda_2,\lambda_3),\qquad Q=R_z(\theta_z)\,R_y(\theta_y)\,R_x(\theta_x), \]
+    with \(R_x,R_y,R_z\) the standard rotation matrices (angles in degrees below).
+    <br><br>
+    <b>Rescaled coordinates.</b> The plots and the initial-condition inputs use the rescaled variables
+    \[ (X,V)\;\longmapsto\;\left(\tfrac{X}{h},\;\tfrac{\sqrt{V}}{h}\right), \]
+    where \(h\) is the learning rate. The learning-rate field below is given in units of \(10^{-6}\) (so a value of \(1\) means \(h=1\times10^{-6}\)).
   </div>
 
   <!-- Row 1: beta, learning rate, epsilon -->
@@ -66,8 +71,8 @@ button:hover{ filter:brightness(1.08); }
       </div>
     </div>
     <div class="ctl">
-      <label>Learning rate</label>
-      <input type="text" id="lr" value="2e-6">
+      <label>Learning rate h (&times; 10⁻⁶)</label>
+      <input type="text" id="lr" value="1">
     </div>
     <div class="ctl">
       <label>&epsilon;</label>
@@ -102,47 +107,50 @@ button:hover{ filter:brightness(1.08); }
 
   <!-- Row 3: eigenvalues -->
   <div class="row r3">
+    <div class="ctl"><label>&lambda;&#8321;</label><input type="text" id="lam1" value="0.5"></div>
+    <div class="ctl"><label>&lambda;&#8322;</label><input type="text" id="lam2" value="0.8"></div>
+    <div class="ctl"><label>&lambda;&#8323;</label><input type="text" id="lam3" value="1.18"></div>
+  </div>
+
+  <!-- Row 4: initial conditions (rescaled) -->
+  <div class="row r2">
     <div class="ctl">
-      <label>&lambda;&#8321;</label>
-      <input type="text" id="lam1" value="0.5">
+      <label>Initial position X&#8320; (rescaled)</label>
+      <div class="icgrid">
+        <input type="text" id="x01" value="0.3">
+        <input type="text" id="x02" value="0.4">
+        <input type="text" id="x03" value="-0.3">
+      </div>
     </div>
     <div class="ctl">
-      <label>&lambda;&#8322;</label>
-      <input type="text" id="lam2" value="0.8">
-    </div>
-    <div class="ctl">
-      <label>&lambda;&#8323;</label>
-      <input type="text" id="lam3" value="1.18">
+      <label>Initial memory V&#8320; (rescaled)</label>
+      <div class="icgrid">
+        <input type="text" id="v01" value="0.2">
+        <input type="text" id="v02" value="0.2">
+        <input type="text" id="v03" value="0.2">
+      </div>
     </div>
   </div>
 
-  <!-- Row 4: burn-in, visualization points -->
+  <!-- Row 5: burn-in, visualization points -->
   <div class="row r2">
-    <div class="ctl">
-      <label>Warmup (burn-in) iterations</label>
-      <input type="text" id="warmup" value="200000">
-    </div>
-    <div class="ctl">
-      <label>Visualization points</label>
-      <input type="text" id="vispts" value="20000">
-    </div>
+    <div class="ctl"><label>Warmup (burn-in) iterations</label><input type="text" id="warmup" value="200000"></div>
+    <div class="ctl"><label>Visualization points</label><input type="text" id="vispts" value="20000"></div>
   </div>
 
-  <!-- Row 5: point size, alpha -->
+  <!-- Row 6: point size, alpha -->
   <div class="row r2">
-    <div class="ctl">
-      <label>Point size</label>
-      <input type="text" id="psize" value="1.5">
-    </div>
-    <div class="ctl">
-      <label>Alpha (opacity 0&ndash;1)</label>
-      <input type="text" id="alpha" value="0.8">
-    </div>
+    <div class="ctl"><label>Point size</label><input type="text" id="psize" value="1.5"></div>
+    <div class="ctl"><label>Alpha (opacity 0&ndash;1)</label><input type="text" id="alpha" value="0.8"></div>
   </div>
 
   <div class="btnrow">
     <button id="prefix1">Prefix 1</button>
     <span id="status">Ready.</span>
+  </div>
+
+  <div class="note">
+    Note: the state \((X,V)\) is already integrated in the rescaled frame \((X/h,\ \sqrt{V}/h)\) with \(h\) the learning rate, matching the MATLAB implementation. Setting the learning-rate field to \(1\) (i.e. \(h=10^{-6}\)) reproduces the reference invariant tori.
   </div>
 </div>
 
@@ -169,9 +177,9 @@ function buildA(l1,l2,l3,txd,tyd,tzd){
 
 function simulate(p){
   var A=buildA(p.l1,p.l2,p.l3,p.tx,p.ty,p.tz);
-  var h=1.04e-6, eps=p.eps, beta=p.beta, lr=p.lr;
+  var h=p.h, eps=p.eps, beta=p.beta;
   function sgrad(X){ var hx=[h*X[0],h*X[1],h*X[2]]; var g=matvec(A,hx); return [g[0]/h,g[1]/h,g[2]/h]; }
-  var X=[0.3,0.4,-0.3], W=[0.2,0.2,0.2];
+  var X=[p.x01,p.x02,p.x03], W=[p.v01,p.v02,p.v03];
   var total=p.warmup+p.vispts, start=p.warmup+1;
   var Xh=[[],[],[]], Wh=[[],[],[]];
   for(var n=1;n<=total;n++){
@@ -179,9 +187,9 @@ function simulate(p){
     var F2=[Math.sqrt(beta*W[0]*W[0]+(1-beta)*g[0]*g[0]),
             Math.sqrt(beta*W[1]*W[1]+(1-beta)*g[1]*g[1]),
             Math.sqrt(beta*W[2]*W[2]+(1-beta)*g[2]*g[2])];
-    var F1=[X[0]-lr*g[0]/(F2[0]+eps/h),
-            X[1]-lr*g[1]/(F2[1]+eps/h),
-            X[2]-lr*g[2]/(F2[2]+eps/h)];
+    var F1=[X[0]-g[0]/(F2[0]+eps/h),
+            X[1]-g[1]/(F2[1]+eps/h),
+            X[2]-g[2]/(F2[2]+eps/h)];
     X=F1; W=F2;
     if(n>=start){ Xh[0].push(X[0]);Xh[1].push(X[1]);Xh[2].push(X[2]);
                   Wh[0].push(W[0]);Wh[1].push(W[1]);Wh[2].push(W[2]); }
@@ -190,9 +198,9 @@ function simulate(p){
 }
 
 function scene(a,b,c){ return {
-  xaxis:{title:a,gridcolor:'#2a2f3d',zerolinecolor:'#3a4152',backgroundcolor:'#12151d',showbackground:true},
-  yaxis:{title:b,gridcolor:'#2a2f3d',zerolinecolor:'#3a4152',backgroundcolor:'#12151d',showbackground:true},
-  zaxis:{title:c,gridcolor:'#2a2f3d',zerolinecolor:'#3a4152',backgroundcolor:'#12151d',showbackground:true},
+  xaxis:{title:a,gridcolor:'#2a2f3d',zerolinecolor:'#3a4152',backgroundcolor:'#12151d',showbackground:true,showticklabels:false},
+  yaxis:{title:b,gridcolor:'#2a2f3d',zerolinecolor:'#3a4152',backgroundcolor:'#12151d',showbackground:true,showticklabels:false},
+  zaxis:{title:c,gridcolor:'#2a2f3d',zerolinecolor:'#3a4152',backgroundcolor:'#12151d',showbackground:true,showticklabels:false},
   aspectmode:'data', camera:{eye:{x:1.5,y:-1.9,z:1.1}}
 };}
 
@@ -206,17 +214,16 @@ function draw(res,ps,alpha){
     Object.assign({scene:scene('V\u2081','V\u2082','V\u2083')},common),{responsive:true});
 }
 
+function num(id){return parseFloat(document.getElementById(id).value);}
 function readParams(){
   return {
-    beta:parseFloat(document.getElementById('beta').value),
-    lr:parseFloat(document.getElementById('lr').value),
-    eps:parseFloat(document.getElementById('eps').value),
-    l1:parseFloat(document.getElementById('lam1').value),
-    l2:parseFloat(document.getElementById('lam2').value),
-    l3:parseFloat(document.getElementById('lam3').value),
-    tx:parseFloat(document.getElementById('tx').value),
-    ty:parseFloat(document.getElementById('ty').value),
-    tz:parseFloat(document.getElementById('tz').value),
+    beta:num('beta'),
+    h:num('lr')*1e-6,
+    eps:num('eps'),
+    l1:num('lam1'), l2:num('lam2'), l3:num('lam3'),
+    tx:num('tx'), ty:num('ty'), tz:num('tz'),
+    x01:num('x01'), x02:num('x02'), x03:num('x03'),
+    v01:num('v01'), v02:num('v02'), v03:num('v03'),
     warmup:parseInt(document.getElementById('warmup').value,10),
     vispts:parseInt(document.getElementById('vispts').value,10)
   };
@@ -224,17 +231,16 @@ function readParams(){
 
 var timer=null;
 function scheduleRun(){
-  document.getElementById('beta_v').textContent=parseFloat(document.getElementById('beta').value).toFixed(4);
-  document.getElementById('tx_v').textContent=parseFloat(document.getElementById('tx').value).toFixed(1)+'\u00b0';
-  document.getElementById('ty_v').textContent=parseFloat(document.getElementById('ty').value).toFixed(1)+'\u00b0';
-  document.getElementById('tz_v').textContent=parseFloat(document.getElementById('tz').value).toFixed(1)+'\u00b0';
+  document.getElementById('beta_v').textContent=num('beta').toFixed(4);
+  document.getElementById('tx_v').textContent=num('tx').toFixed(1)+'\u00b0';
+  document.getElementById('ty_v').textContent=num('ty').toFixed(1)+'\u00b0';
+  document.getElementById('tz_v').textContent=num('tz').toFixed(1)+'\u00b0';
   var st=document.getElementById('status'); st.textContent='Simulating...';
   if(timer) clearTimeout(timer);
   timer=setTimeout(function(){
     var p=readParams();
-    if(!isFinite(p.beta)||!isFinite(p.lr)||!isFinite(p.eps)||!p.warmup||!p.vispts){ st.textContent='Waiting for valid input...'; return; }
-    var ps=parseFloat(document.getElementById('psize').value);
-    var alpha=parseFloat(document.getElementById('alpha').value);
+    if(!isFinite(p.beta)||!isFinite(p.h)||p.h===0||!isFinite(p.eps)||!p.warmup||!p.vispts){ st.textContent='Waiting for valid input...'; return; }
+    var ps=num('psize'), alpha=num('alpha');
     var t0=performance.now();
     var res=simulate(p);
     draw(res,ps,alpha);
@@ -243,7 +249,7 @@ function scheduleRun(){
   },250);
 }
 
-['beta','lr','eps','lam1','lam2','lam3','tx','ty','tz','warmup','vispts','psize','alpha'].forEach(function(id){
+['beta','lr','eps','lam1','lam2','lam3','tx','ty','tz','x01','x02','x03','v01','v02','v03','warmup','vispts','psize','alpha'].forEach(function(id){
   var el=document.getElementById(id);
   el.addEventListener('input',scheduleRun);
   el.addEventListener('change',scheduleRun);
@@ -251,7 +257,7 @@ function scheduleRun(){
 
 document.getElementById('prefix1').addEventListener('click',function(){
   document.getElementById('beta').value=0.98;
-  document.getElementById('lr').value='2e-6';
+  document.getElementById('lr').value='1';
   document.getElementById('eps').value='1e-7';
   document.getElementById('lam1').value='0.5';
   document.getElementById('lam2').value='0.8';
@@ -259,6 +265,12 @@ document.getElementById('prefix1').addEventListener('click',function(){
   document.getElementById('tx').value=60;
   document.getElementById('ty').value=-60;
   document.getElementById('tz').value=-143.5;
+  document.getElementById('x01').value='0.3';
+  document.getElementById('x02').value='0.4';
+  document.getElementById('x03').value='-0.3';
+  document.getElementById('v01').value='0.2';
+  document.getElementById('v02').value='0.2';
+  document.getElementById('v03').value='0.2';
   document.getElementById('psize').value='1.5';
   document.getElementById('alpha').value='0.8';
   document.getElementById('vispts').value='20000';
